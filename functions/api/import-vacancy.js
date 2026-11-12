@@ -116,13 +116,24 @@ export async function onRequest({ request }) {
     if (!isSupportedUrl(inputUrl)) return json({
       error: "Пока поддерживаются hh.ru, Rabota.ru, SuperJob, Хабр Карьера, Geekjob, Getmatch и карьерные сайты Сбера, Яндекса, Т-Банка, Ozon и МТС."
     }, 400);
-    const response = await fetch(inputUrl, {
-      headers: {
-        "user-agent": "Mozilla/5.0 (compatible; CareerDesk/1.0)",
-        "accept": "text/html,application/xhtml+xml"
-      },
-      redirect: "follow"
-    });
+    let currentUrl = inputUrl;
+    let response;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      response = await fetch(currentUrl, {
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; CareerDesk/1.0)",
+          "accept": "text/html,application/xhtml+xml"
+        },
+        redirect: "manual"
+      });
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get("location");
+      if (!location) break;
+      const nextUrl = new URL(location, currentUrl).toString();
+      if (!isSupportedUrl(nextUrl)) throw new Error("Сайт перенаправил на неподдерживаемый адрес. Импорт остановлен в целях безопасности.");
+      currentUrl = nextUrl;
+      if (attempt === 3) throw new Error("Слишком много перенаправлений.");
+    }
     if (!response.ok) return json({ error: `Сайт вернул HTTP ${response.status}. Возможно, страница закрыта для автоматического просмотра.` }, 422);
     if (!(response.headers.get("content-type") || "").includes("text/html")) {
       return json({ error: "По этой ссылке сайт не вернул HTML-страницу вакансии." }, 422);
