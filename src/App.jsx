@@ -147,9 +147,11 @@ export default function App() {
                 setCloudStatus('Локальные вакансии перенесены в облако');
               }
             } else if (active) {
+              setItems([]);
               setCloudStatus('Облако подключено · вакансий пока нет');
             }
           } else if (active) {
+            setItems([]);
             setCloudStatus('Облако подключено · вакансий пока нет');
           }
         }
