@@ -49,3 +49,17 @@ npm run preview
 - Извлечение информации — это парсинг страницы и структурированных данных, а не AI-анализ. Оценка соответствия профилю, AI-сопроводительные письма и облачная база будут отдельным следующим этапом.
 - Поля, которые сайт не отдаёт, не придумываются: они остаются пустыми и требуют проверки.
 - Не добавляйте секреты, API-ключи или реальные персональные документы в публичный репозиторий.
+
+
+## Supabase Auth setup
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set:
+   - `VITE_SUPABASE_URL` — project URL.
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` — publishable key from Supabase API Keys.
+3. Restart Vite after changing environment variables.
+4. Create an account in CareerDesk or sign in with an existing Supabase Auth user.
+
+Only the publishable key belongs in the browser. Never expose the Supabase `service_role` key or database password.
+
+Authentication is connected in this stage. Vacancy records are still kept in localStorage until the separate cloud-sync and local-data migration stage is completed. Existing local data is not automatically overwritten.
