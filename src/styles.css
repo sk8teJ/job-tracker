@@ -70,5 +70,5 @@
 .auth-config-card h1{font-size:23px}
 .auth-config-list{display:grid;gap:8px;margin-top:18px}
 .auth-config-list code{padding:10px;border-radius:7px;background:#f6f6fa;color:#625a9d;font-size:10px}
-.auth-logout{position:fixed;z-index:80;top:13px;right:18px;padding:8px 12px;border:1px solid #e8e8ef;border-radius:8px;background:#fff;color:#77798a;font-size:10px;cursor:pointer;box-shadow:0 3px 12px #1718270a}
-@media(max-width:760px){.auth-card{padding:27px 22px}.auth-decoration{display:none}.auth-card h1{font-size:25px}.auth-logout{top:9px;right:10px}}
+.auth-account-tools{position:fixed;z-index:80;top:13px;right:18px;display:flex;align-items:center;gap:10px;padding:5px 6px 5px 11px;border:1px solid #e8e8ef;border-radius:9px;background:#ffffffed;box-shadow:0 3px 12px #1718270a}.auth-account-tools>span{color:#898b9a;font-size:9px}.auth-logout{position:static;padding:7px 10px;border:0;border-radius:7px;background:#f4f3fa;color:#77798a;font-size:9px;cursor:pointer}
+@media(max-width:760px){.auth-card{padding:27px 22px}.auth-decoration{display:none}.auth-card h1{font-size:25px}.auth-account-tools{top:9px;right:10px;gap:5px}.auth-account-tools>span{font-size:8px}}
