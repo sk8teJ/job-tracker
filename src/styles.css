@@ -34,3 +34,41 @@
 .spin{animation:careerdesk-spin .9s linear infinite}
 @keyframes careerdesk-spin{to{transform:rotate(360deg)}}
 @media(max-width:580px){.import-controls{flex-direction:column}.import-controls .button-primary{width:100%}.import-box{padding:11px}.form-section-title{align-items:flex-start;flex-direction:column;gap:3px}}
+
+
+/* Supabase authentication */
+.auth-screen{min-height:100vh;display:grid;place-items:center;position:relative;overflow:hidden;padding:28px;background:radial-gradient(circle at 18% 20%,#e8e4ff 0,transparent 32%),radial-gradient(circle at 85% 80%,#e3efff 0,transparent 30%),#f7f7fb}
+.auth-card{position:relative;z-index:2;width:min(440px,100%);padding:38px;background:#fff;border:1px solid #ececf3;border-radius:22px;box-shadow:0 24px 80px #27234412}
+.auth-brand{display:flex;align-items:center;gap:10px;font:800 19px Manrope,sans-serif;color:#292a3b;letter-spacing:-.8px}
+.auth-brand>span:last-child>span{color:#a2a1b1}
+.auth-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#7668df;color:#fff;font:800 24px Manrope}
+.auth-eyebrow{display:flex;align-items:center;gap:7px;margin-top:35px;color:#887cce;font-size:9px;font-weight:800;letter-spacing:1.2px}
+.auth-card h1{font:800 29px Manrope,sans-serif;letter-spacing:-1.1px;color:#292a3b;margin:13px 0 8px}
+.auth-description,.auth-config-card>p{font-size:12px;line-height:1.7;color:#858898;margin:0}
+.auth-form{display:grid;gap:16px;margin-top:27px}
+.auth-form label{display:grid;gap:8px}
+.auth-form label>span{display:flex;align-items:center;gap:7px;color:#686b7c;font-size:10px;font-weight:700}
+.auth-form input{height:44px;border:1px solid #e7e8ef;border-radius:9px;padding:0 13px;font:12px 'DM Sans',sans-serif;color:#303244;outline:none;background:#fff}
+.auth-form input:focus{border-color:#9b8eea;box-shadow:0 0 0 3px #8b7fe719}
+.auth-submit{height:46px;display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:9px;background:#7668df;color:#fff;font-size:11px;font-weight:700;cursor:pointer;margin-top:3px}
+.auth-submit:disabled{opacity:.6;cursor:wait}
+.auth-alert{display:flex;gap:8px;align-items:flex-start;padding:10px 11px;border-radius:8px;font-size:10px;line-height:1.5}
+.auth-alert.error{background:#fff0ef;color:#b65e58}
+.auth-alert.success{background:#edf8f2;color:#398365}
+.auth-switch{text-align:center;margin-top:22px;color:#9295a4;font-size:10px}
+.auth-switch button{border:0;background:none;color:#7466d6;font-size:10px;font-weight:700;cursor:pointer;margin-left:4px}
+.auth-security{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:25px;padding-top:17px;border-top:1px solid #f0f0f4;color:#a1a3b0;font-size:9px}
+.auth-decoration{position:absolute;width:470px;height:470px;left:calc(50% - 650px);top:calc(50% - 235px);display:grid;place-items:center;opacity:.55}
+.auth-orbit{position:absolute;border:1px solid #c9c3f3;border-radius:50%}
+.orbit-one{inset:20px}.orbit-two{inset:75px;border-style:dashed}
+.auth-decoration-core{width:100px;height:100px;display:grid;place-items:center;border-radius:30px;background:#7668df;color:#fff;box-shadow:0 20px 60px #7668df40}
+.auth-footer{position:absolute;bottom:20px;color:#aaaaba;font-size:8px;font-weight:700;letter-spacing:1.2px}
+.auth-footer span{padding:0 5px;color:#c2bddf}
+.auth-loading{display:grid;justify-items:center;gap:12px;color:#858898;font-size:11px}
+.auth-loading .auth-mark{width:46px;height:46px;font-size:30px}
+.auth-config-card .auth-icon{width:42px;height:42px;display:grid;place-items:center;margin-top:30px;border-radius:12px;background:#f1efff;color:#7668df}
+.auth-config-card h1{font-size:23px}
+.auth-config-list{display:grid;gap:8px;margin-top:18px}
+.auth-config-list code{padding:10px;border-radius:7px;background:#f6f6fa;color:#625a9d;font-size:10px}
+.auth-logout{position:fixed;z-index:80;top:13px;right:18px;padding:8px 12px;border:1px solid #e8e8ef;border-radius:8px;background:#fff;color:#77798a;font-size:10px;cursor:pointer;box-shadow:0 3px 12px #1718270a}
+@media(max-width:760px){.auth-card{padding:27px 22px}.auth-decoration{display:none}.auth-card h1{font-size:25px}.auth-logout{top:9px;right:10px}}
