@@ -1,8 +1,20 @@
 # CareerDesk
 
-Personal job-search CRM built with React, Vite and Supabase-ready architecture.
+Личная CRM для управления поиском работы. Интерфейс на React + Vite, адаптивная вёрстка, иконки Lucide.
 
-## Development
+## Что уже реализовано
+
+- Dashboard с ключевыми метриками и обзором воронки.
+- База вакансий: поиск, фильтр по статусу, добавление и удаление записей.
+- Kanban-воронка с изменением статусов.
+- Разделы контактов, документов, аналитики и настроек.
+- Экспорт списка вакансий в CSV.
+- Локальное сохранение данных в браузере через localStorage.
+- Адаптивный интерфейс для мобильных экранов.
+
+## Запуск локально
+
+Требуется Node.js 20.19+ или 22.12+.
 
 ```bash
 npm install
@@ -13,6 +25,19 @@ npm run dev
 
 ```bash
 npm run build
+npm run preview
 ```
 
-The current version uses local demo data. Supabase credentials and private personal information are not included in this repository.
+## Важно
+
+Текущая версия — frontend MVP с демонстрационными записями. Данные сохраняются только в браузере текущего устройства и не синхронизируются между устройствами. Контакты и часть разделов содержат демонстрационное содержимое.
+
+Supabase Auth, PostgreSQL и Storage пока не подключены. Не добавляйте секреты или реальные персональные документы в публичный репозиторий. Для будущих клиентских переменных используйте только публичный ключ Supabase с настроенными RLS policies; service role key нельзя помещать во frontend.
+
+## Deployment
+
+Для Cloudflare Pages:
+
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Framework preset: Vite
