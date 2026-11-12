@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import supabase from './lib/supabase.js';
 import { ArrowRight, BriefcaseBusiness, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-    })
-  : null;
 
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(null);
