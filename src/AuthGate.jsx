@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react';
 import supabase from './lib/supabase.js';
 import { ArrowRight, BriefcaseBusiness, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,5 +96,5 @@ export default function AuthGate({ children }) {
     </div>;
   }
 
-  return <>{children}<button className="auth-logout" onClick={() => supabase.auth.signOut()} title={session.user.email}>Выйти</button></>;
+  return <>{children}<div className="auth-account-tools"><span>Аккаунт подключён · вакансии пока локально</span><button className="auth-logout" onClick={() => supabase.auth.signOut()} title={session.user.email}>Выйти</button></div></>;
 }
