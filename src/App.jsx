@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import supabase from './lib/supabase.js';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, BriefcaseBusiness,
   CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Download, FileText,
@@ -46,6 +47,8 @@ function initials(value = '') { return value.trim().slice(0, 1).toUpperCase() ||
 export default function App() {
   const [page, setPage] = useState('Обзор');
   const [items, setItems] = useState(readApplications);
+  const [cloudReady, setCloudReady] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState('Подключаем облачную базу...');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Все статусы');
   const [modal, setModal] = useState(false);
@@ -58,12 +61,143 @@ export default function App() {
   const [imported, setImported] = useState(false);
   const [form, setForm] = useState({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '', description: '', responsibilities: '', requirements: '', skills: [] });
 
-  useEffect(() => { localStorage.setItem('careerdesk-applications', JSON.stringify(items)); }, [items]);
+  useEffect(() => {
+    let active = true;
+    async function loadCloudData() {
+      if (!supabase) {
+        setCloudStatus('Supabase не настроен');
+        setCloudReady(true);
+        return;
+      }
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!userData.user) throw new Error('Не удалось определить пользователя Supabase.');
+        const { data: rows, error: readError } = await supabase
+          .from('vacancies')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .order('created_at', { ascending: false });
+        if (readError) throw readError;
+
+        if (rows?.length) {
+          const cloudItems = rows.map(row => ({
+            id: row.id,
+            company: row.company_name || '',
+            role: row.position || '',
+            salary: row.salary_text || '',
+            place: row.place || [row.city, row.work_format].filter(Boolean).join(' · '),
+            date: row.application_date || (row.created_at ? row.created_at.slice(0, 10) : ''),
+            status: row.status || 'Сохранена',
+            source: row.source || '',
+            url: row.url || '',
+            note: row.notes || row.note || '',
+            description: row.description || '',
+            responsibilities: row.responsibilities || '',
+            requirements: row.requirements || '',
+            skills: row.skills || []
+          }));
+          if (active) {
+            setItems(cloudItems);
+            localStorage.setItem('careerdesk-applications', JSON.stringify(cloudItems));
+            setCloudStatus('Облако синхронизировано');
+          }
+        } else {
+          const saved = localStorage.getItem('careerdesk-applications');
+          if (saved) {
+            let localItems = [];
+            try { localItems = JSON.parse(saved); } catch { localItems = []; }
+            if (Array.isArray(localItems) && localItems.length) {
+              const payload = localItems.map(item => ({
+                user_id: userData.user.id,
+                company_name: item.company || '',
+                position: item.role || 'Без названия',
+                url: item.url || null,
+                normalized_url: item.url ? item.url.trim().replace(/\/$/, '') : null,
+                source: item.source || null,
+                salary_text: item.salary || null,
+                place: item.place || null,
+                application_date: item.date || null,
+                status: item.status || 'Сохранена',
+                notes: item.note || null,
+                description: item.description || null,
+                responsibilities: item.responsibilities || null,
+                requirements: item.requirements || null,
+                skills: Array.isArray(item.skills) ? item.skills : []
+              }));
+              const { data: migrated, error: migrationError } = await supabase
+                .from('vacancies').insert(payload).select('*');
+              if (migrationError) throw migrationError;
+              const migratedItems = migrated.map(row => ({
+                id: row.id, company: row.company_name || '', role: row.position || '',
+                salary: row.salary_text || '', place: row.place || '',
+                date: row.application_date || row.created_at.slice(0, 10),
+                status: row.status || 'Сохранена', source: row.source || '',
+                url: row.url || '', note: row.notes || '', description: row.description || '',
+                responsibilities: row.responsibilities || '', requirements: row.requirements || '',
+                skills: row.skills || []
+              }));
+              if (active) {
+                setItems(migratedItems);
+                localStorage.setItem('careerdesk-applications', JSON.stringify(migratedItems));
+                setCloudStatus('Локальные вакансии перенесены в облако');
+              }
+            } else if (active) {
+              setCloudStatus('Облако подключено · вакансий пока нет');
+            }
+          } else if (active) {
+            setCloudStatus('Облако подключено · вакансий пока нет');
+          }
+        }
+      } catch (error) {
+        console.error('CareerDesk cloud sync:', error);
+        if (active) setCloudStatus('Ошибка облачной синхронизации: ' + (error.message || 'неизвестная ошибка'));
+      } finally {
+        if (active) setCloudReady(true);
+      }
+    }
+    loadCloudData();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (cloudReady) localStorage.setItem('careerdesk-applications', JSON.stringify(items));
+  }, [items, cloudReady]);
+
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(''), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  async function saveVacancyToCloud(item) {
+    if (!supabase) return item;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const row = {
+      user_id: userData.user.id,
+      company_name: item.company || '',
+      position: item.role || 'Без названия',
+      url: item.url || null,
+      normalized_url: item.url ? item.url.trim().replace(/\/$/, '') : null,
+      source: item.source || null,
+      salary_text: item.salary || null,
+      place: item.place || null,
+      application_date: item.date || null,
+      status: item.status || 'Сохранена',
+      notes: item.note || null,
+      description: item.description || null,
+      responsibilities: item.responsibilities || null,
+      requirements: item.requirements || null,
+      skills: Array.isArray(item.skills) ? item.skills : []
+    };
+    const query = item.id && typeof item.id === 'string'
+      ? supabase.from('vacancies').update(row).eq('id', item.id).select('*').single()
+      : supabase.from('vacancies').insert(row).select('*').single();
+    const { data, error } = await query;
+    if (error) throw error;
+    return { ...item, id: data.id };
+  }
 
   const filtered = useMemo(() => items.filter((v) => {
     const q = query.toLowerCase();
@@ -110,20 +244,49 @@ export default function App() {
       setImportError('Такая ссылка уже есть в базе.');
       return;
     }
-    setItems((old) => [{ ...form, id: Date.now() }, ...old]);
-    setForm({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '', description: '', responsibilities: '', requirements: '', skills: [] });
-    setImportUrl(''); setImportError(''); setImportWarning(''); setImported(false);
-    setModal(false);
-    setPage('Вакансии');
-    setToast('Вакансия добавлена');
+    const draft = { ...form, id: null };
+    try {
+      const saved = await saveVacancyToCloud(draft);
+      setItems((old) => [saved, ...old]);
+      setCloudStatus('Облако синхронизировано');
+      setForm({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '', description: '', responsibilities: '', requirements: '', skills: [] });
+      setImportUrl(''); setImportError(''); setImportWarning(''); setImported(false);
+      setModal(false);
+      setPage('Вакансии');
+      setToast('Вакансия сохранена в облако');
+    } catch (error) {
+      setImportError('Не удалось сохранить в облако: ' + (error.message || 'ошибка'));
+    }
   }
-  function updateStatus(id, status) {
-    setItems((old) => old.map((v) => v.id === id ? { ...v, status } : v));
-    setToast('Статус обновлён');
+  async function updateStatus(id, status) {
+    const current = items.find(v => v.id === id);
+    if (!current) return;
+    try {
+      if (supabase && typeof id === 'string') {
+        const { error } = await supabase.from('vacancies').update({ status }).eq('id', id);
+        if (error) throw error;
+      }
+      setItems((old) => old.map((v) => v.id === id ? { ...v, status } : v));
+      setCloudStatus('Облако синхронизировано');
+      setToast('Статус обновлён');
+    } catch (error) {
+      setCloudStatus('Ошибка синхронизации');
+      setToast('Не удалось обновить статус: ' + (error.message || 'ошибка'));
+    }
   }
-  function removeItem(id) {
-    setItems((old) => old.filter((v) => v.id !== id));
-    setToast('Запись удалена');
+  async function removeItem(id) {
+    try {
+      if (supabase && typeof id === 'string') {
+        const { error } = await supabase.from('vacancies').delete().eq('id', id);
+        if (error) throw error;
+      }
+      setItems((old) => old.filter((v) => v.id !== id));
+      setCloudStatus('Облако синхронизировано');
+      setToast('Запись удалена');
+    } catch (error) {
+      setCloudStatus('Ошибка синхронизации');
+      setToast('Не удалось удалить запись: ' + (error.message || 'ошибка'));
+    }
   }
   function exportCsv() {
     const cols = ['company', 'role', 'salary', 'place', 'date', 'status', 'source', 'url', 'note'];
@@ -180,7 +343,7 @@ export default function App() {
           <section className="bottom-note"><div className="note-icon"><Sparkles size={18}/></div><div><b>Маленькие шаги — большой результат.</b><p>Добавляй вакансии сразу после отклика, фиксируй разговоры и не теряй договорённости.</p></div><span>CAREERDESK</span></section>
         </>}
 
-        {page === 'Вакансии' && <section className="panel vacancy-panel"><div className="panel-head vacancy-head"><div><h2>База вакансий</h2><p>{items.length} записей · данные сохраняются в этом браузере</p></div><button className="button-quiet" onClick={exportCsv}><Download size={15}/> Экспорт CSV</button></div><div className="table-tools"><div className="search-field"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Компания, должность или формат..."/></div><div className="filter-field"><SlidersHorizontal size={15}/><select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option>Все статусы</option>{stages.map(s=><option key={s}>{s}</option>)}</select><ChevronDown size={14}/></div></div><VacancyTable items={filtered} onStatus={updateStatus} onRemove={removeItem}/><div className="table-foot">Показано {filtered.length} из {items.length} вакансий</div></section>}
+        {page === 'Вакансии' && <section className="panel vacancy-panel"><div className="panel-head vacancy-head"><div><h2>База вакансий</h2><p>{items.length} записей · {cloudStatus}</p></div><button className="button-quiet" onClick={exportCsv}><Download size={15}/> Экспорт CSV</button></div><div className="table-tools"><div className="search-field"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Компания, должность или формат..."/></div><div className="filter-field"><SlidersHorizontal size={15}/><select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option>Все статусы</option>{stages.map(s=><option key={s}>{s}</option>)}</select><ChevronDown size={14}/></div></div><VacancyTable items={filtered} onStatus={updateStatus} onRemove={removeItem}/><div className="table-foot">Показано {filtered.length} из {items.length} вакансий</div></section>}
 
         {page === 'Воронка' && <section className="kanban-wrap"><div className="kanban-info"><div><b>Доска откликов</b><span>Меняй статус прямо в карточке вакансии.</span></div><span className="kanban-total">{items.length} всего</span></div><div className="kanban-board">{stages.filter(s=>s!=='Отказ').map((stage, index)=><div className="kanban-column" key={stage}><div className="kanban-column-head"><span className={'column-dot c'+index}/><b>{stage}</b><small>{count(stage)}</small></div><div className="kanban-cards">{items.filter(v=>v.status===stage).map(v=><article className="kanban-card" key={v.id}><div className="kanban-card-top"><div className="company-mark">{initials(v.company)}</div><button className="mini-more" onClick={()=>removeItem(v.id)} title="Удалить"><Trash2 size={14}/></button></div><h3>{v.role}</h3><p>{v.company}</p><div className="kanban-card-meta"><span><Wallet size={13}/>{v.salary}</span><span><CalendarDays size={13}/>{dateLabel(v.date)}</span></div><select value={v.status} onChange={e=>updateStatus(v.id,e.target.value)} aria-label="Изменить статус">{stages.map(s=><option key={s}>{s}</option>)}</select></article>)}</div></div>)}</div><div className="rejected-strip"><span><ArrowDownRight size={16}/> Отказы</span><b>{count('Отказ')}</b><button onClick={()=>{setPage('Вакансии');setStatusFilter('Отказ')}}>Посмотреть</button></div></section>}
 
@@ -190,7 +353,7 @@ export default function App() {
 
         {page === 'Аналитика' && <><section className="metric-grid analytics-metrics"><Metric icon={BriefcaseBusiness} label="Всего добавлено" value={items.length} foot="За всё время" tone="violet"/><Metric icon={MessageCircle} label="Ответы и этапы" value={items.filter(v=>['Тестовое','Интервью','Оффер'].includes(v.status)).length} foot="После отклика" tone="green"/><Metric icon={TrendingUp} label="Конверсия в этап" value={responseRate+'%'} foot="Тестовые и интервью" tone="blue"/><Metric icon={Target} label="Активные" value={active} foot="Текущая работа" tone="amber"/></section><section className="panel analytics-panel"><div className="panel-head"><div><h2>Распределение по этапам</h2><p>Сколько вакансий находится на каждом этапе</p></div><span className="period-label">ВСЁ ВРЕМЯ</span></div><div className="analytics-bars">{stages.map((s,i)=><div className="analytics-row" key={s}><span>{s}</span><div className="analytics-track"><i style={{width:(items.length?Math.max(count(s)>0?7:0,count(s)/items.length*100):0)+'%'}} className={'analytics-fill fill-'+i}/></div><b>{count(s)}</b></div>)}</div></section><section className="insight-panel"><Sparkles size={19}/><div><b>Что можно улучшить</b><p>{count('Отклик отправлен')>0?'Есть отклики без ответа. Запланируй follow-up через 5–7 рабочих дней.':'Добавь новые вакансии, чтобы статистика стала информативнее.'} Аналитика рассчитывается по данным, сохранённым в этом браузере.</p></div></section></>}
 
-        {page === 'Настройки' && <section className="panel content-panel settings-panel"><div className="panel-head"><div><h2>Настройки</h2><p>Параметры твоего рабочего пространства.</p></div></div><div className="setting-row"><div><b>Локальное хранение</b><p>Данные сейчас сохраняются в браузере на этом устройстве.</p></div><span className="setting-state"><Check size={14}/> Активно</span></div><div className="setting-row"><div><b>Экспорт данных</b><p>Скачай резервную копию списка вакансий в формате CSV.</p></div><button className="button-quiet" onClick={exportCsv}><Download size={15}/> Экспортировать</button></div><div className="setting-row"><div><b>Облачная синхронизация</b><p>Подключение аккаунта и Supabase будет добавлено отдельно.</p></div><span className="coming-soon">СКОРО</span></div><div className="setting-row"><div><b>Сброс демонстрационных данных</b><p>Вернуть исходный пример вакансий. Текущие записи будут заменены.</p></div><button className="button-danger" onClick={()=>{setItems(seed);setToast('Демо-данные восстановлены')}}>Сбросить</button></div></section>}
+        {page === 'Настройки' && <section className="panel content-panel settings-panel"><div className="panel-head"><div><h2>Настройки</h2><p>Параметры твоего рабочего пространства.</p></div></div><div className="setting-row"><div><b>Облачная синхронизация</b><p>{cloudStatus}. Локальная копия остаётся в браузере как дополнительная страховка.</p></div><span className="setting-state"><Check size={14}/> {cloudReady ? 'Подключено' : 'Проверка'}</span></div><div className="setting-row"><div><b>Экспорт данных</b><p>Скачай резервную копию списка вакансий в формате CSV.</p></div><button className="button-quiet" onClick={exportCsv}><Download size={15}/> Экспортировать</button></div><div className="setting-row"><div><b>Сброс демонстрационных данных</b><p>Вернуть исходный пример вакансий. Текущие записи будут заменены.</p></div><button className="button-danger" onClick={()=>{setItems(seed);setToast('Демо-данные восстановлены')}}>Сбросить</button></div></section>}
       </div>
       <footer className="footer"><span>CAREERDESK <i>·</i> PERSONAL JOB CRM</span><span>Сделано, чтобы поиск работы был понятнее.</span></footer>
     </main>
