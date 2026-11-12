@@ -108,6 +108,10 @@ export default function App() {
             let localItems = [];
             try { localItems = JSON.parse(saved); } catch { localItems = []; }
             if (Array.isArray(localItems) && localItems.length) {
+              // The original six records are demo fixtures, not the user's applications.
+              localItems = localItems.filter(item => !(typeof item.id === 'number' && item.id >= 1 && item.id <= 6));
+            }
+            if (Array.isArray(localItems) && localItems.length) {
               const payload = localItems.map(item => ({
                 user_id: userData.user.id,
                 company_name: item.company || '',
