@@ -45,8 +45,9 @@ npm run preview
 
 ## Важно: текущие ограничения
 
-- Вакансии пока сохраняются в localStorage этого браузера. Supabase PostgreSQL/Auth ещё не подключены.
-- Извлечение информации — это парсинг страницы и структурированных данных, а не AI-анализ. Оценка соответствия профилю, AI-сопроводительные письма и облачная база будут отдельным следующим этапом.
+- Извлечение информации — это парсинг страницы и структурированных данных, а не AI-анализ. Оценка соответствия профилю и AI-сопроводительные письма запланированы отдельным этапом.
+- Supabase Auth и облачное хранение вакансий подключены. Для новых проектов выполните SQL-миграцию из `supabase/migrations/` перед запуском актуального приложения.
+- При первом входе приложение переносит пользовательские локальные вакансии в облако; шесть встроенных демонстрационных записей не переносятся. Локальная копия сохраняется в браузере.
 - Поля, которые сайт не отдаёт, не придумываются: они остаются пустыми и требуют проверки.
 - Не добавляйте секреты, API-ключи или реальные персональные документы в публичный репозиторий.
 
@@ -62,4 +63,4 @@ npm run preview
 
 Only the publishable key belongs in the browser. Never expose the Supabase `service_role` key or database password.
 
-Authentication is connected in this stage. Vacancy records are still kept in localStorage until the separate cloud-sync and local-data migration stage is completed. Existing local data is not automatically overwritten.
+Authentication and vacancy cloud storage are connected. Before using the latest code, run the SQL migration in `supabase/migrations/202611120001_cloud_vacancy_fields.sql` in the Supabase SQL Editor. On first load, saved local vacancies are migrated if the cloud table is empty; the six built-in demo fixtures are excluded. The app keeps a local browser copy as an additional fallback.
