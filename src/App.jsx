@@ -88,7 +88,7 @@ export default function App() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Не удалось обработать ссылку.');
-      if (items.some((item) => item.url && item.url.replace(/\\/$/, '') === url.replace(/\\/$/, ''))) {
+      if (items.some((item) => item.url && item.url.replace(/\/$/, '') === url.replace(/\/$/, ''))) {
         throw new Error('Эта вакансия уже есть в базе. Открой существующую запись или используй другую ссылку.');
       }
       const data = result.data;
@@ -106,7 +106,7 @@ export default function App() {
   function addApplication(e) {
     e.preventDefault();
     if (!form.company.trim() || !form.role.trim()) return;
-    if (form.url && items.some((item) => item.url && item.url.replace(/\\/$/, '') === form.url.replace(/\\/$/, ''))) {
+    if (form.url && items.some((item) => item.url && item.url.replace(/\/$/, '') === form.url.replace(/\/$/, ''))) {
       setImportError('Такая ссылка уже есть в базе.');
       return;
     }
