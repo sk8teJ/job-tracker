@@ -4,7 +4,8 @@ import {
   CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Download, FileText,
   Filter, LayoutDashboard, Menu, MessageCircle, MoreHorizontal, Plus, Search,
   Settings, Sparkles, Target, TrendingUp, Users, X, ChartNoAxesCombined,
-  KanbanSquare, Building2, MapPin, Wallet, ExternalLink, Trash2, SlidersHorizontal
+  KanbanSquare, Building2, MapPin, Wallet, ExternalLink, Trash2, SlidersHorizontal,
+  Link2, LoaderCircle, AlertCircle, CheckCircle2
 } from 'lucide-react';
 
 const seed = [
@@ -50,7 +51,12 @@ export default function App() {
   const [modal, setModal] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [toast, setToast] = useState('');
-  const [form, setForm] = useState({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '' });
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importWarning, setImportWarning] = useState('');
+  const [imported, setImported] = useState(false);
+  const [form, setForm] = useState({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '', description: '', responsibilities: '', requirements: '', skills: [] });
 
   useEffect(() => { localStorage.setItem('careerdesk-applications', JSON.stringify(items)); }, [items]);
   useEffect(() => {
@@ -69,11 +75,44 @@ export default function App() {
   const active = items.filter((v) => !['Отказ', 'Оффер'].includes(v.status)).length;
   const responseRate = items.length ? Math.round(items.filter((v) => ['Интервью', 'Тестовое', 'Оффер'].includes(v.status)).length / items.length * 100) : 0;
 
+  async function importVacancy(e) {
+    e.preventDefault();
+    const url = importUrl.trim();
+    if (!url) { setImportError('Вставь ссылку на вакансию.'); return; }
+    setImporting(true);
+    setImportError('');
+    setImportWarning('');
+    try {
+      const response = await fetch('/api/import-vacancy', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Не удалось обработать ссылку.');
+      if (items.some((item) => item.url && item.url.replace(/\\/$/, '') === url.replace(/\\/$/, ''))) {
+        throw new Error('Эта вакансия уже есть в базе. Открой существующую запись или используй другую ссылку.');
+      }
+      const data = result.data;
+      setForm((old) => ({ ...old, ...data, date: new Date().toISOString().slice(0, 10), status: 'Сохранена' }));
+      setImported(true);
+      setImportWarning(result.warning || '');
+      setToast('Данные извлечены — проверь поля');
+    } catch (error) {
+      setImportError(error.message || 'Ошибка импорта.');
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function addApplication(e) {
     e.preventDefault();
     if (!form.company.trim() || !form.role.trim()) return;
+    if (form.url && items.some((item) => item.url && item.url.replace(/\\/$/, '') === form.url.replace(/\\/$/, ''))) {
+      setImportError('Такая ссылка уже есть в базе.');
+      return;
+    }
     setItems((old) => [{ ...form, id: Date.now() }, ...old]);
-    setForm({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '' });
+    setForm({ company: '', role: '', salary: '', place: 'Удалённо', date: new Date().toISOString().slice(0, 10), status: 'Сохранена', source: '', url: '', note: '', description: '', responsibilities: '', requirements: '', skills: [] });
+    setImportUrl(''); setImportError(''); setImportWarning(''); setImported(false);
     setModal(false);
     setPage('Вакансии');
     setToast('Вакансия добавлена');
@@ -156,7 +195,44 @@ export default function App() {
       <footer className="footer"><span>CAREERDESK <i>·</i> PERSONAL JOB CRM</span><span>Сделано, чтобы поиск работы был понятнее.</span></footer>
     </main>
 
-    {modal && <div className="modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><form className="modal" onSubmit={addApplication}><div className="modal-head"><div><span className="overline">НОВАЯ ЗАПИСЬ</span><h2>Добавить вакансию</h2></div><button type="button" className="round-icon" onClick={()=>setModal(false)}><X size={18}/></button></div><div className="form-grid"><label>Компания *<input autoFocus value={form.company} onChange={e=>setForm({...form,company:e.target.value})} placeholder="Например, Яндекс" required/></label><label>Название позиции *<input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} placeholder="Junior Data Analyst" required/></label><label>Зарплата<input value={form.salary} onChange={e=>setForm({...form,salary:e.target.value})} placeholder="от 80 000 ₽"/></label><label>Формат / город<input value={form.place} onChange={e=>setForm({...form,place:e.target.value})} placeholder="Удалённо"/></label><label>Дата добавления<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label><label>Статус<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{stages.map(s=><option key={s}>{s}</option>)}</select></label><label>Источник<input value={form.source} onChange={e=>setForm({...form,source:e.target.value})} placeholder="hh.ru, Telegram..."/></label><label>Ссылка на вакансию<input value={form.url} onChange={e=>setForm({...form,url:e.target.value})} placeholder="https://..."/></label><label className="full-field">Заметки<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Контакт, договорённости, что подготовить..."/></label></div><div className="modal-actions"><button type="button" className="button-quiet" onClick={()=>setModal(false)}>Отмена</button><button type="submit" className="button-primary"><Plus size={16}/> Сохранить вакансию</button></div></form></div>}
+    {modal && <div className="modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}>
+      <form className="modal" onSubmit={addApplication}>
+        <div className="modal-head">
+          <div><span className="overline">УМНЫЙ ИМПОРТ</span><h2>Добавить вакансию</h2><p className="modal-subtitle">Вставь ссылку — CareerDesk попробует заполнить карточку автоматически.</p></div>
+          <button type="button" className="round-icon" onClick={()=>setModal(false)}><X size={18}/></button>
+        </div>
+        <div className="import-box">
+          <label htmlFor="vacancy-url"><Link2 size={15}/> Ссылка на вакансию</label>
+          <div className="import-controls">
+            <input id="vacancy-url" type="url" value={importUrl} onChange={e=>{setImportUrl(e.target.value);setImportError('');}} placeholder="https://hh.ru/vacancy/..." />
+            <button type="button" className="button-primary import-button" onClick={importVacancy} disabled={importing || !importUrl.trim()}>
+              {importing ? <><LoaderCircle size={15} className="spin"/> Читаю...</> : <><Sparkles size={15}/> Извлечь данные</>}
+            </button>
+          </div>
+          <small>Сейчас поддерживаются hh.ru, Rabota.ru, SuperJob, Хабр Карьера, Geekjob, Getmatch и карьерные сайты крупных компаний.</small>
+          {importError && <div className="import-message error"><AlertCircle size={15}/>{importError}</div>}
+          {importWarning && <div className="import-message warning"><AlertCircle size={15}/>{importWarning}</div>}
+          {imported && <div className="import-message success"><CheckCircle2 size={15}/>Данные получены. Проверь их ниже и нажми «Сохранить вакансию».</div>}
+        </div>
+        <div className="form-section-title">Данные вакансии <span>можно исправить вручную</span></div>
+        <div className="form-grid">
+          <label>Компания *<input value={form.company} onChange={e=>setForm({...form,company:e.target.value})} placeholder="Например, Яндекс" required/></label>
+          <label>Название позиции *<input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} placeholder="Junior Data Analyst" required/></label>
+          <label>Зарплата<input value={form.salary} onChange={e=>setForm({...form,salary:e.target.value})} placeholder="Не указана"/></label>
+          <label>Формат / город<input value={form.place} onChange={e=>setForm({...form,place:e.target.value})} placeholder="Удалённо / Москва"/></label>
+          <label>Дата добавления<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
+          <label>Статус<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{stages.map(s=><option key={s}>{s}</option>)}</select></label>
+          <label>Источник<input value={form.source} onChange={e=>setForm({...form,source:e.target.value})} placeholder="hh.ru, Telegram..."/></label>
+          <label>Ссылка<input value={form.url} onChange={e=>setForm({...form,url:e.target.value})} placeholder="https://..."/></label>
+          <label className="full-field">Описание вакансии<textarea value={form.description || ''} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Описание будет извлечено из страницы, если сайт его отдаёт."/></label>
+          <label className="full-field">Заметки / требования<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Требования, обязанности, контакты, что подготовить..."/></label>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button-quiet" onClick={()=>setModal(false)}>Отмена</button>
+          <button type="submit" className="button-primary"><Plus size={16}/> Сохранить вакансию</button>
+        </div>
+      </form>
+    </div>}
     {toast && <div className="toast"><Check size={16}/>{toast}</div>}
   </div>;
 }
