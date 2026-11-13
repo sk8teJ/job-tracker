@@ -64,3 +64,6 @@ npm run preview
 Only the publishable key belongs in the browser. Never expose the Supabase `service_role` key or database password.
 
 Authentication and vacancy cloud storage are connected. Before using the latest code, run the SQL migration in `supabase/migrations/202611120001_cloud_vacancy_fields.sql` in the Supabase SQL Editor. On first load, saved local vacancies are migrated if the cloud table is empty; the six built-in demo fixtures are excluded. The app keeps a local browser copy as an additional fallback.
+
+
+<!-- temporary GitHub write-access check -->
