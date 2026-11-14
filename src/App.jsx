@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import supabase from './lib/supabase.js';
-import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Check, ChevronLeft, ExternalLink } from 'lucide-react';
+import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Check, ChevronLeft } from 'lucide-react';
 
 const EMPTY_FORM = { title: '', year: '', director: '', genres: [], overview: '', poster_url: '', cast: [], rating: '', review: '', source_url: '', status: 'watched', watched_at: '' };
 
@@ -30,7 +30,6 @@ export default function App() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [sourceUrl, setSourceUrl] = useState('');
   const [metadataReady, setMetadataReady] = useState(false);
-  const [token, setToken] = useState(() => localStorage.getItem('mora_tmdb_token') || '');
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -67,24 +66,14 @@ export default function App() {
   async function importMovie() {
     setImporting(true); setNotice('');
     try {
-      if (!token.trim()) throw new Error('Добавь TMDB Read Access Token — он сохранится только в этом браузере.');
-      localStorage.setItem('mora_tmdb_token', token.trim());
-      const parsed = parseMovieUrl(sourceUrl.trim());
-      let type = parsed.type;
-      let id = parsed.id;
-      const headers = { Authorization: 'Bearer ' + token.trim(), accept: 'application/json' };
-      if (type === 'imdb') {
-        const findResponse = await fetch('https://api.themoviedb.org/3/find/' + id + '?external_source=imdb_id&language=ru-RU', { headers });
-        if (!findResponse.ok) throw new Error('TMDB не смог найти фильм по этой ссылке.');
-        const found = await findResponse.json();
-        const item = found.movie_results?.[0] || found.tv_results?.[0];
-        if (!item) throw new Error('Фильм по этой IMDb-ссылке не найден в TMDB.');
-        type = found.movie_results?.length ? 'movie' : 'tv';
-        id = item.id;
-      }
-      const response = await fetch('https://api.themoviedb.org/3/' + type + '/' + id + '?append_to_response=credits&language=ru-RU', { headers });
-      if (!response.ok) throw new Error('Не удалось получить данные. Проверь ссылку и TMDB-токен.');
-      const data = await response.json();
+      const response = await fetch('/api/tmdb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: sourceUrl.trim() })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Не удалось получить данные TMDB.');
+      const data = result;
       const crew = data.credits?.crew || [];
       const director = crew.find(person => person.job === 'Director')?.name || crew.find(person => person.department === 'Directing')?.name || '';
       const cast = (data.credits?.cast || []).slice(0, 10).map(person => person.name);
@@ -177,7 +166,6 @@ export default function App() {
         <div className="import-area">
           <label htmlFor="movie-url">ССЫЛКА НА ФИЛЬМ</label>
           <div className="import-line"><input id="movie-url" type="url" placeholder="TMDB или IMDb URL" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}/><button type="button" onClick={importMovie} disabled={importing || !sourceUrl.trim()}>{importing ? <LoaderCircle className="spin" size={17}/> : <ArrowUpRight size={17}/>}</button></div>
-          <details className="tmdb-token"><summary>Настроить импорт данных</summary><p>Для поиска названия, сюжета, постера, режиссёра и актёров нужен бесплатный TMDB Read Access Token. Получи его в настройках API TMDB и вставь сюда. Токен хранится только в этом браузере.</p><input type="password" autoComplete="off" placeholder="TMDB Read Access Token" value={token} onChange={e => setToken(e.target.value)}/><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Открыть настройки TMDB <ExternalLink size={12}/></a></details>
         </div>
         {notice && <p className="form-notice">{notice}</p>}
         {metadataReady && <div className="movie-fields">
