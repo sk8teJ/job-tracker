@@ -1,4 +1,7 @@
-export async function onRequestPost(context) {
+export async function onRequest(context) {
+  if (context.request.method !== 'POST') {
+    return Response.json({ error: 'Метод не поддерживается.' }, { status: 405 });
+  }
   const token = context.env.TMDB_READ_ACCESS_TOKEN;
   if (!token) {
     return Response.json(
