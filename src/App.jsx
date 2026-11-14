@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import supabase from './lib/supabase.js';
-import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Search, Check, ChevronLeft, ExternalLink } from 'lucide-react';
+import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Check, ChevronLeft, ExternalLink } from 'lucide-react';
 
 const EMPTY_FORM = { title: '', year: '', director: '', genres: [], overview: '', poster_url: '', cast: [], rating: '', review: '', source_url: '', status: 'watched', watched_at: '' };
 
@@ -34,8 +34,6 @@ export default function App() {
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
-  const [search, setSearch] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -53,7 +51,7 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
-  const visibleFilms = useMemo(() => films.filter(f => [f.title, f.director, ...(f.genres || [])].join(' ').toLowerCase().includes(search.toLowerCase())), [films, search]);
+  const visibleFilms = films;
 
   function startAdd() {
     setEditing(null); setSelected(null); setForm(EMPTY_FORM); setSourceUrl(''); setMetadataReady(false); setNotice(''); setModal(true);
@@ -147,17 +145,15 @@ export default function App() {
     <header className="mora-header">
       <a className="mora-wordmark" href="#" aria-label="Mora">mora</a>
       <div className="mora-header-actions">
-        <button className="quiet-icon" onClick={() => setShowSearch(v => !v)} aria-label="Поиск"><Search size={18}/></button>
         <button className="round-add" onClick={startAdd} aria-label="Добавить фильм"><Plus size={19}/></button>
       </div>
     </header>
-    {showSearch && <div className="search-drawer"><Search size={16}/><input autoFocus placeholder="Название, режиссёр, жанр" value={search} onChange={e => setSearch(e.target.value)}/><button onClick={() => {setSearch('');setShowSearch(false)}} aria-label="Закрыть поиск"><X size={16}/></button></div>}
     <main className="mora-collection">
       {notice && <div className="mora-notice">{notice}<button onClick={() => setNotice('')}><X size={14}/></button></div>}
       {loading ? <div className="collection-loading"><LoaderCircle className="spin" size={22}/></div> : visibleFilms.length === 0 ? (
         <section className="collection-empty">
           <button className="empty-plus" onClick={startAdd} aria-label="Добавить первый фильм"><Plus size={31} strokeWidth={1}/></button>
-          <span className="empty-caption">{search ? 'Ничего не найдено' : 'ТВОЯ КОЛЛЕКЦИЯ'}</span>
+          <span className="empty-caption">'ТВОЯ КОЛЛЕКЦИЯ'</span>
         </section>
       ) : (
         <section className="collection-content">
