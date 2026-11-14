@@ -29,6 +29,7 @@ export default function App() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sourceUrl, setSourceUrl] = useState('');
+  const [metadataReady, setMetadataReady] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem('mora_tmdb_token') || '');
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,13 +56,13 @@ export default function App() {
   const visibleFilms = useMemo(() => films.filter(f => [f.title, f.director, ...(f.genres || [])].join(' ').toLowerCase().includes(search.toLowerCase())), [films, search]);
 
   function startAdd() {
-    setEditing(null); setSelected(null); setForm(EMPTY_FORM); setSourceUrl(''); setNotice(''); setModal(true);
+    setEditing(null); setSelected(null); setForm(EMPTY_FORM); setSourceUrl(''); setMetadataReady(false); setNotice(''); setModal(true);
   }
 
   function startEdit(film) {
     setEditing(film);
     setForm({ ...EMPTY_FORM, ...film, year: String(film.year || ''), rating: film.rating === '' ? '' : String(film.rating), review: film.review || '' });
-    setSourceUrl(film.source_url || '');
+    setSourceUrl(film.source_url || ''); setMetadataReady(true);
     setSelected(null); setModal(true);
   }
 
@@ -101,6 +102,7 @@ export default function App() {
         source_url: sourceUrl.trim(),
         status: 'watched'
       }));
+      setMetadataReady(true);
     } catch (error) { setNotice(error.message || 'Не удалось импортировать фильм.'); }
     finally { setImporting(false); }
   }
@@ -171,7 +173,7 @@ export default function App() {
         </section>
       )}
     </main>
-    <footer className="mora-footer"><span>mora</span><span>© {new Date().getFullYear()}</span></footer>
+    <footer className="mora-footer"><span>mora</span><span>ДАННЫЕ О ФИЛЬМАХ: TMDB</span><span>© {new Date().getFullYear()}</span></footer>
 
     {modal && <div className="mora-overlay" onMouseDown={e => {if(e.target===e.currentTarget)setModal(false)}}>
       <form className="mora-modal" onSubmit={saveFilm}>
@@ -182,7 +184,7 @@ export default function App() {
           <details className="tmdb-token"><summary>Настроить импорт данных</summary><p>Для поиска названия, сюжета, постера, режиссёра и актёров нужен бесплатный TMDB Read Access Token. Получи его в настройках API TMDB и вставь сюда. Токен хранится только в этом браузере.</p><input type="password" autoComplete="off" placeholder="TMDB Read Access Token" value={token} onChange={e => setToken(e.target.value)}/><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Открыть настройки TMDB <ExternalLink size={12}/></a></details>
         </div>
         {notice && <p className="form-notice">{notice}</p>}
-        <div className="movie-fields">
+        {metadataReady && <div className="movie-fields">
           <label className="wide">НАЗВАНИЕ<input required value={form.title} onChange={e => setForm({...form,title:e.target.value})} placeholder="Название фильма"/></label>
           <label>ГОД<input type="number" min="1888" max="2100" value={form.year} onChange={e => setForm({...form,year:e.target.value})}/></label>
           <label>РЕЖИССЁР<input value={form.director} onChange={e => setForm({...form,director:e.target.value})}/></label>
@@ -192,8 +194,8 @@ export default function App() {
           <label className="wide">ПОСТЕР (URL)<input type="url" value={form.poster_url} onChange={e => setForm({...form,poster_url:e.target.value})} placeholder="Заполнится автоматически"/></label>
           <label className="wide">МОЯ ОЦЕНКА <div className="rating-control"><input type="number" min="0" max="10" step="0.5" value={form.rating} onChange={e => setForm({...form,rating:e.target.value})} placeholder="—"/><span>/ 10</span><small>Шаг 0,5</small></div></label>
           <label className="wide">КОММЕНТАРИЙ <textarea rows="4" maxLength="1000" value={form.review} onChange={e => setForm({...form,review:e.target.value})} placeholder="Что осталось после просмотра? До 1000 символов."/><small className="char-count">{form.review.length} / 1000</small></label>
-        </div>
-        <div className="mora-modal-actions"><button type="button" className="text-button" onClick={() => setModal(false)}>ОТМЕНА</button><button className="save-button" disabled={saving || !form.title.trim()}>{saving ? <LoaderCircle className="spin" size={16}/> : <Check size={16}/>} СОХРАНИТЬ</button></div>
+        </div>}
+        <div className="mora-modal-actions"><button type="button" className="text-button" onClick={() => setModal(false)}>ОТМЕНА</button>{metadataReady && <button className="save-button" disabled={saving || !form.title.trim()}>{saving ? <LoaderCircle className="spin" size={16}/> : <Check size={16}/>} СОХРАНИТЬ</button>}</div>
       </form>
     </div>}
 
