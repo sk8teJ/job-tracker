@@ -71,8 +71,19 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: sourceUrl.trim() })
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Не удалось получить данные TMDB.');
+      const responseText = await response.text();
+      let result;
+      try {
+        result = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        throw new Error(`Сервер импорта вернул некорректный ответ (HTTP ${response.status}). Проверь, что Cloudflare развернул Functions из папки functions/.`);
+      }
+      if (!response.ok) {
+        throw new Error(result?.error || `Ошибка сервера импорта (HTTP ${response.status}).`);
+      }
+      if (!result) {
+        throw new Error('Сервер импорта вернул пустой ответ. Проверь деплой Cloudflare Pages Functions.');
+      }
       const data = result;
       const crew = data.credits?.crew || [];
       const director = crew.find(person => person.job === 'Director')?.name || crew.find(person => person.department === 'Directing')?.name || '';
