@@ -1,5 +1,5 @@
 {
-  "name": "careerdesk",
+  "name": "frame-cinema-journal",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.0",
     "lucide-react": "^0.468.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "@supabase/supabase-js": "^2.57.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
