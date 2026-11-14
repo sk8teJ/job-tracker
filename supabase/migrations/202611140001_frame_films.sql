@@ -23,6 +23,9 @@ create index if not exists films_user_status_idx on public.films(user_id, status
 
 alter table public.films enable row level security;
 
+-- Explicit grants are needed because automatic exposure of new tables is disabled.
+grant select, insert, update, delete on table public.films to authenticated;
+
 drop policy if exists "Users can view own films" on public.films;
 create policy "Users can view own films" on public.films for select to authenticated using (auth.uid() = user_id);
 
