@@ -61,8 +61,8 @@ test('resolves a valid IMDb title through TMDB before loading details', async t 
   const response = await onRequest(makeContext('https://www.imdb.com/title/tt0133093/'));
   assert.equal(response.status, 200);
   assert.equal((await response.json()).id, 603);
-  assert.match(requestedUrls[0], /\\/find\\/tt0133093\\?/);
-  assert.match(requestedUrls[1], /\\/movie\\/603\\?/);
+  assert.match(requestedUrls[0], /\/find\/tt0133093\?/);
+  assert.match(requestedUrls[1], /\/movie\/603\?/);
 });
 
 test('returns 405 for non-POST requests', async () => {

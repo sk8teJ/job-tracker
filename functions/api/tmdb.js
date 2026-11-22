@@ -16,13 +16,13 @@ function parseSourceUrl(rawUrl) {
   const host = url.hostname.toLowerCase();
   if (TMDB_HOSTS.has(host)) {
     // TMDB URLs may include a human-readable slug after the numeric ID.
-    const match = url.pathname.match(/^\\/(movie|tv)\\/(\\d+)(?:-[^/]+)?\\/?$/);
+    const match = url.pathname.match(/^\/(movie|tv)\/(\d+)(?:-[^/]+)?\/?$/);
     if (match) return { type: match[1], id: match[2] };
     throw new Error('Нужна ссылка на страницу фильма или сериала TMDB.');
   }
 
   if (IMDB_HOSTS.has(host)) {
-    const match = url.pathname.match(/^\\/title\\/(tt\\d+)\\/?$/i);
+    const match = url.pathname.match(/^\/title\/(tt\d+)\/?$/i);
     if (match) return { type: 'imdb', id: match[1].toLowerCase() };
     throw new Error('Нужна ссылка на страницу фильма или сериала IMDb.');
   }
@@ -56,13 +56,13 @@ export async function onRequest(context) {
     return Response.json({ error: error.message || 'Некорректная ссылка.' }, { status: 400 });
   }
 
-  const headers = { Authorization: `Bearer ${token}`, accept: 'application/json' };
+  const headers = { Authorization: 'Bearer ' + token, accept: 'application/json' };
   try {
     let { type, id } = parsed;
 
     if (type === 'imdb') {
       const findResponse = await fetch(
-        `https://api.themoviedb.org/3/find/${encodeURIComponent(id)}?external_source=imdb_id&language=ru-RU`,
+        'https://api.themoviedb.org/3/find/' + encodeURIComponent(id) + '?external_source=imdb_id&language=ru-RU',
         { headers }
       );
       if (!findResponse.ok) {
@@ -76,7 +76,7 @@ export async function onRequest(context) {
     }
 
     const response = await fetch(
-      `https://api.themoviedb.org/3/${type}/${encodeURIComponent(id)}?append_to_response=credits&language=ru-RU`,
+      'https://api.themoviedb.org/3/' + type + '/' + encodeURIComponent(id) + '?append_to_response=credits&language=ru-RU',
       { headers }
     );
     if (!response.ok) {
