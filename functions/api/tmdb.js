@@ -1,3 +1,35 @@
+const TMDB_HOSTS = new Set(['themoviedb.org', 'www.themoviedb.org']);
+const IMDB_HOSTS = new Set(['imdb.com', 'www.imdb.com']);
+
+function parseSourceUrl(rawUrl) {
+  let url;
+  try {
+    url = new URL(String(rawUrl || '').trim());
+  } catch {
+    throw new Error('Некорректная ссылка.');
+  }
+
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) {
+    throw new Error('Используй HTTPS-ссылку TMDB или IMDb без логина, пароля и нестандартного порта.');
+  }
+
+  const host = url.hostname.toLowerCase();
+  if (TMDB_HOSTS.has(host)) {
+    // TMDB URLs may include a human-readable slug after the numeric ID.
+    const match = url.pathname.match(/^\\/(movie|tv)\\/(\\d+)(?:-[^/]+)?\\/?$/);
+    if (match) return { type: match[1], id: match[2] };
+    throw new Error('Нужна ссылка на страницу фильма или сериала TMDB.');
+  }
+
+  if (IMDB_HOSTS.has(host)) {
+    const match = url.pathname.match(/^\\/title\\/(tt\\d+)\\/?$/i);
+    if (match) return { type: 'imdb', id: match[1].toLowerCase() };
+    throw new Error('Нужна ссылка на страницу фильма или сериала IMDb.');
+  }
+
+  throw new Error('Поддерживаются только ссылки TMDB и IMDb.');
+}
+
 export async function onRequest(context) {
   if (context.request.method !== 'POST') {
     return Response.json({ error: 'Метод не поддерживается.' }, { status: 405 });
@@ -19,17 +51,7 @@ export async function onRequest(context) {
 
   let parsed;
   try {
-    const url = new URL(String(body?.url || '').trim());
-    const host = url.hostname.toLowerCase();
-    if (!['themoviedb.org', 'www.themoviedb.org', 'imdb.com', 'www.imdb.com'].includes(host)) {
-      throw new Error('Поддерживаются только ссылки TMDB и IMDb.');
-    }
-
-    const tmdbMatch = url.pathname.match(/^\/(movie|tv)\/(\d+)/);
-    const imdbMatch = url.pathname.match(/^\/title\/(tt\d+)/);
-    if (tmdbMatch) parsed = { type: tmdbMatch[1], id: tmdbMatch[2] };
-    else if (imdbMatch && host.includes('imdb.com')) parsed = { type: 'imdb', id: imdbMatch[1] };
-    else throw new Error('Не удалось распознать ссылку. Нужна страница фильма или сериала TMDB либо IMDb.');
+    parsed = parseSourceUrl(body?.url);
   } catch (error) {
     return Response.json({ error: error.message || 'Некорректная ссылка.' }, { status: 400 });
   }
