@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import supabase from './lib/supabase.js';
-import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Check, ChevronLeft } from 'lucide-react';
+import { Plus, X, Star, Trash2, Pencil, LoaderCircle, ArrowUpRight, Film, Check, ChevronLeft, ExternalLink } from 'lucide-react';
 
 const EMPTY_FORM = { title: '', year: '', director: '', genres: [], overview: '', poster_url: '', cast: [], rating: '', review: '', source_url: '', status: 'watched', watched_at: '' };
 
